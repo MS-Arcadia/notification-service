@@ -75,8 +75,8 @@ jobs:
               event_id="ci-event",
               event_type=translation.ORDER_GIFT_SENT,
               payload={
-                  "order_id": "o-1", "buyer_id": "b-1", "recipient_id": "r-1",
-                  "game_title": "CI", "gift_message": "",
+                  "order_id": "o-1", "sender_id": "b-1", "recipient_id": "r-1",
+                  "game_title": "CI", "message": "",
               },
           ))
           assert created == 2, created
