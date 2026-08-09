@@ -59,7 +59,7 @@ class Config(BaseConfig):
 
     # CsvList rather than list[str]: redeclaring it here would discard the NoDecode annotation it
     # carries in BaseConfig, and CORS_ORIGINS=a,b would fail to parse at boot.
-    cors_origins: CsvList = Field(default_factory=lambda: ["http://localhost:3000"])
+    # cors_origins: CsvList = Field(default_factory=lambda: ["http://localhost:3000"])
 
 
 @lru_cache(maxsize=1)
