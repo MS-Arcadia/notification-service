@@ -14,7 +14,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.adapters.inbound.consumer import Handlers
@@ -181,16 +180,6 @@ def build(config: Config | None = None) -> FastAPI:
     app.state.notification_service = notification_service
     app.state.uow = uow
     app.state.sessions = sessions
-
-    # if cfg.cors_origins:
-    #     app.add_middleware(
-    #         CORSMiddleware,
-    #         allow_origins=cfg.cors_origins,
-    #         allow_credentials=True,
-    #         # No PATCH and no DELETE: a notification's text never changes and it is never removed.
-    #         allow_methods=["GET", "POST"],
-    #         allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
-    #     )
 
     install_middleware(app, service=cfg.service_name)
     install_error_handlers(app)

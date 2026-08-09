@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field
-
-from app.platform.config import BaseConfig, CsvList
+from app.platform.config import BaseConfig
 
 
 class Config(BaseConfig):
@@ -56,10 +54,6 @@ class Config(BaseConfig):
         arrangement: creation is idempotent.
         """
         return [f"{topic}.dlq" for topic in self.consumed_topics]
-
-    # CsvList rather than list[str]: redeclaring it here would discard the NoDecode annotation it
-    # carries in BaseConfig, and CORS_ORIGINS=a,b would fail to parse at boot.
-    # cors_origins: CsvList = Field(default_factory=lambda: ["http://localhost:3000"])
 
 
 @lru_cache(maxsize=1)
