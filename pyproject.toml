@@ -18,6 +18,10 @@ dependencies = [
     # cannot break this service the same way.
     "aiokafka[snappy,lz4,zstd]>=0.12,<1.0",
     "pyjwt>=2.9,<3.0",
+    # Runtime, not just a test client: the staff directory asks auth-profile-service who the
+    # SUPPORT and ADMIN accounts are. It sat under the dev extra while only tests used it, and
+    # the image — which installs `.` without extras — died on import the moment it did not.
+    "httpx>=0.27,<1.0",
     "prometheus-client>=0.21,<1.0",
 ]
 
@@ -25,7 +29,6 @@ dependencies = [
 dev = [
     "pytest>=8.3,<9.0",
     "pytest-asyncio>=0.24,<1.0",
-    "httpx>=0.27,<1.0",
     "ruff>=0.8,<1.0",
 ]
 
