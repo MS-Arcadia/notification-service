@@ -24,6 +24,12 @@ class Config(BaseConfig):
     topic_festival_events: str = "festival-events"
     consumer_group: str = "notification-service"
 
+    # Where to ask who the staff are. A few events are addressed to whoever can act on them —
+    # a game waiting for review, a role somebody asked for — and this service owns "who gets
+    # told". Empty disables the lookup, and those events then notify nobody rather than
+    # failing.
+    auth_profile_base_url: str = "http://auth-profile-service:8085"
+
     @property
     def owned_topics(self) -> list[str]:
         """Nothing. This service is a terminal consumer.

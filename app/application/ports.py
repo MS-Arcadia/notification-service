@@ -22,6 +22,22 @@ class IdFactory(Protocol):
     def __call__(self) -> str: ...
 
 
+class StaffDirectory(Protocol):
+    async def staff_ids(self) -> list[str]:
+        """Every SUPPORT and ADMIN user id.
+
+        Needed because a few events are addressed to whoever can act on them — a game waiting for
+        review, a role somebody asked for — and this service owns "who gets told". Asking Auth is
+        the alternative to Catalog knowing what a Support agent is, which would put staffing
+        concerns in the game catalogue.
+
+        Returning an empty list is a valid answer and means nobody is notified; a directory that is
+        briefly unreachable must not stop the event being consumed, because the queue would then
+        stall on something nobody is waiting for.
+        """
+        ...
+
+
 class NotificationRepository(Protocol):
     async def add_all(self, notifications: list[Notification]) -> int:
         """Store several notifications, skipping any that already exist.

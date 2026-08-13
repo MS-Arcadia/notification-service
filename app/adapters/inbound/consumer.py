@@ -47,6 +47,7 @@ class Handlers:
     def game_events_router(self) -> Router:
         return (
             Router()
+            .on(translation.CATALOG_GAME_SUBMITTED, self.handle)
             .on(translation.CATALOG_GAME_APPROVED, self.handle)
             .on(translation.CATALOG_GAME_REJECTED, self.handle)
             .on(translation.CATALOG_GAME_RELEASED, self.handle)
@@ -69,6 +70,7 @@ class Handlers:
     def user_events_router(self) -> Router:
         return (
             Router()
+            .on(translation.AUTH_ROLE_REQUESTED, self.handle)
             .on(translation.AUTH_REGISTRATION_APPROVED, self.handle)
             .on(translation.AUTH_REGISTRATION_REJECTED, self.handle)
             .on(translation.AUTH_ROLE_GRANTED, self.handle)

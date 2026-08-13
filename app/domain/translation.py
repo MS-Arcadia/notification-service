@@ -25,6 +25,7 @@ message three times for nothing.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -36,6 +37,7 @@ from app.platform import errors
 # Fully qualified, because that is what is on the wire. Grouped by producer so it is obvious at a
 # glance which service owns each name, and so a missing group is visible.
 
+CATALOG_GAME_SUBMITTED = "arcadia.catalog.v1.GameSubmitted"
 CATALOG_GAME_APPROVED = "arcadia.catalog.v1.GameApproved"
 CATALOG_GAME_REJECTED = "arcadia.catalog.v1.GameRejected"
 CATALOG_GAME_RELEASED = "arcadia.catalog.v1.GameReleased"
@@ -50,6 +52,7 @@ ORDER_INSTALMENT_PAID = "arcadia.order.v1.InstalmentPaid"
 ORDER_INSTALMENT_COMPLETED = "arcadia.order.v1.InstalmentPlanCompleted"
 ORDER_INSTALMENT_DEFAULTED = "arcadia.order.v1.InstalmentPlanDefaulted"
 
+AUTH_ROLE_REQUESTED = "arcadia.auth.v1.RoleRequested"
 AUTH_REGISTRATION_APPROVED = "arcadia.auth.v1.RegistrationApproved"
 AUTH_REGISTRATION_REJECTED = "arcadia.auth.v1.RegistrationRejected"
 AUTH_ROLE_GRANTED = "arcadia.auth.v1.RoleGranted"
@@ -79,12 +82,32 @@ class Draft:
     subject_id: str
 
 
-def translate(event_type: str, payload: dict[str, Any]) -> list[Draft]:
-    """Every notification one event should produce, or an empty list if it produces none."""
+def translate(
+    event_type: str,
+    payload: dict[str, Any],
+    staff_ids: Sequence[str] = (),
+) -> list[Draft]:
+    """Every notification one event should produce, or an empty list if it produces none.
+
+    `staff_ids` is for the handful of events addressed to whoever can act on them rather than
+    to the person who acted — a game waiting for review, a role somebody asked for. They fan
+    out to one notification each, because a notification belongs to a reader: "unread" and
+    "read" mean nothing for a shared inbox.
+
+    Passed in rather than looked up here, so this stays a pure function that a test can assert
+    on with `==`. `needs_staff` tells the caller when fetching them is worth a request.
+    """
     handler = _TRANSLATORS.get(event_type)
     if handler is None:
         return []
+    if event_type in _STAFF_TRANSLATORS:
+        return _STAFF_TRANSLATORS[event_type](payload, staff_ids)
     return handler(payload)
+
+
+def needs_staff(event_type: str) -> bool:
+    """Whether this event is addressed to staff, and so needs the directory looked up first."""
+    return event_type in _STAFF_TRANSLATORS
 
 
 def is_known(event_type: str) -> bool:
@@ -94,6 +117,43 @@ def is_known(event_type: str) -> bool:
 
 
 # --- the catalog ---------------------------------------------------------
+
+
+def _game_submitted(payload: dict, staff_ids: Sequence[str]) -> list[Draft]:
+    """A game is waiting for a human decision, so tell the humans who can make it.
+
+    Requirement 1.3 makes review manual. Without this the queue filled up and nobody was told —
+    the developer waited on Support, and Support only found out by opening the page.
+    """
+    _, game, title = _game(payload)
+    return [
+        Draft(
+            user_id=staff_id,
+            kind=Kind.REVIEW_REQUESTED,
+            title=f"{title} is waiting for review",
+            body="A developer submitted it. Open the review queue to approve or reject it.",
+            subject_type=SubjectType.GAME,
+            subject_id=game,
+        )
+        for staff_id in staff_ids
+    ]
+
+
+def _role_requested(payload: dict, staff_ids: Sequence[str]) -> list[Draft]:
+    """Somebody asked to become a Developer or a Support agent."""
+    requested = _role_label(str(payload.get("requested_role") or ""))
+    user_id = _require(payload, "user_id", "RoleRequested")
+    return [
+        Draft(
+            user_id=staff_id,
+            kind=Kind.ROLE_REQUEST_RECEIVED,
+            title=f"Someone asked to become a {requested}",
+            body="Open the admin screen to approve or reject the request.",
+            subject_type=SubjectType.ACCOUNT,
+            subject_id=user_id,
+        )
+        for staff_id in staff_ids
+    ]
 
 
 def _game_approved(payload: dict) -> list[Draft]:
@@ -599,7 +659,16 @@ def _role_label(role: str) -> str:
     }.get(role, role.lower().replace("_", " "))
 
 
+_STAFF_TRANSLATORS = {
+    CATALOG_GAME_SUBMITTED: _game_submitted,
+    AUTH_ROLE_REQUESTED: _role_requested,
+}
+
 _TRANSLATORS = {
+    # The staff-facing ones are listed here as well so `is_known` still answers for them;
+    # `translate` dispatches them through _STAFF_TRANSLATORS because they need an audience.
+    CATALOG_GAME_SUBMITTED: _game_submitted,
+    AUTH_ROLE_REQUESTED: _role_requested,
     CATALOG_GAME_APPROVED: _game_approved,
     CATALOG_GAME_REJECTED: _game_rejected,
     CATALOG_GAME_RELEASED: _game_released,

@@ -30,6 +30,59 @@ def money(minor: int, currency: str = "IRR") -> dict:
 # checks.
 
 
+def test_a_submitted_game_tells_every_staff_member_one_each():
+    """The gap this closes: requirement 1.3 makes review manual, and nobody was told a game was
+    waiting. The developer waited on Support and Support only found out by opening the page.
+
+    One notification each rather than one shared: "read" and "unread" mean nothing for an inbox
+    two people share.
+    """
+    drafts = translation.translate(
+        translation.CATALOG_GAME_SUBMITTED,
+        {
+            "game_id": "game-1",
+            "developer_id": "dev-1",
+            "title": "Neon Drift",
+            "version_count": 1,
+        },
+        ["support-1", "admin-1"],
+    )
+
+    assert [draft.user_id for draft in drafts] == ["support-1", "admin-1"]
+    assert all(draft.kind is Kind.REVIEW_REQUESTED for draft in drafts)
+    assert all("Neon Drift" in draft.title for draft in drafts)
+    assert all(draft.subject_id == "game-1" for draft in drafts)
+    # Not addressed to the developer: they are the one who acted.
+    assert "dev-1" not in [draft.user_id for draft in drafts]
+
+
+def test_a_role_request_reaches_the_people_who_can_decide_it():
+    drafts = translation.translate(
+        translation.AUTH_ROLE_REQUESTED,
+        {"request_id": "req-1", "user_id": "user-9", "requested_role": "DEVELOPER"},
+        ["support-1"],
+    )
+
+    assert len(drafts) == 1
+    assert drafts[0].user_id == "support-1"
+    assert drafts[0].kind is Kind.ROLE_REQUEST_RECEIVED
+    assert "developer" in drafts[0].title.lower()
+    # The subject is the person asking, so the screen can open their account.
+    assert drafts[0].subject_id == "user-9"
+
+
+def test_no_staff_means_no_notifications_rather_than_an_error():
+    """The directory being briefly unreachable must not stall the consumer on an event nobody is
+    waiting for. Nothing is sent, and the adapter logs that staff were missed."""
+    drafts = translation.translate(
+        translation.CATALOG_GAME_SUBMITTED,
+        {"game_id": "game-1", "developer_id": "dev-1", "title": "Neon Drift"},
+        [],
+    )
+
+    assert drafts == []
+
+
 def test_a_game_decision_goes_to_the_developer_not_to_support():
     """Support approves; the developer is told. The `support_id` in the payload is who *acted*."""
     drafts = translation.translate(
@@ -411,8 +464,6 @@ def test_a_ban_with_a_reason_gives_it_and_without_one_says_where_to_go():
     [
         # Fires before anything has happened.
         "arcadia.order.v1.PurchaseRequested",
-        # The developer telling us something they already know.
-        "arcadia.catalog.v1.GameSubmitted",
         # Every balance movement on the platform, on a topic this service also reads.
         "arcadia.wallet.v1.WalletDebited",
         # Another service's read-model concern.

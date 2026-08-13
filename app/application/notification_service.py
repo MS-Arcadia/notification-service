@@ -17,7 +17,7 @@ from app.application.dto import (
     Page,
     UnreadCountView,
 )
-from app.application.ports import Clock, IdFactory, NotificationRepository
+from app.application.ports import Clock, IdFactory, NotificationRepository, StaffDirectory
 from app.domain import translation
 from app.domain.notification import Notification
 from app.platform import errors
@@ -45,11 +45,15 @@ class NotificationService:
         notifications: NotificationRepository,
         clock: Clock,
         new_id: IdFactory,
+        # Optional: only the staff-facing events need it, and a test asserting on a purchase
+        # notification should not have to supply a directory to get one.
+        staff: StaffDirectory | None = None,
     ) -> None:
         self._uow = uow
         self._notifications = notifications
         self._clock = clock
         self._new_id = new_id
+        self._staff = staff
 
     # --- driven by Kafka -------------------------------------------------
 
@@ -61,7 +65,13 @@ class NotificationService:
         before. The consumer logs which, because "nothing happened" and "nothing happened again" are
         very different when somebody is asking why a user was not told.
         """
-        drafts = translation.translate(event_type, payload)
+        # Only the staff-facing events pay for the directory lookup; everything else is
+        # addressed to somebody named in the payload.
+        staff_ids: list[str] = []
+        if self._staff is not None and translation.needs_staff(event_type):
+            staff_ids = await self._staff.staff_ids()
+
+        drafts = translation.translate(event_type, payload, staff_ids)
         if not drafts:
             return 0
 

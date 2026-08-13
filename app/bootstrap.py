@@ -19,6 +19,7 @@ from sqlalchemy import text
 from app.adapters.inbound.consumer import Handlers
 from app.adapters.inbound.rest import notifications as notifications_routes
 from app.adapters.outbound.repositories import PostgresNotificationRepository
+from app.adapters.outbound.staff_directory import HttpStaffDirectory
 from app.application.notification_service import NotificationService
 from app.config import Config, get_config
 from app.platform import health, kafka, migrate
@@ -64,11 +65,25 @@ def build(config: Config | None = None) -> FastAPI:
     sessions = create_session_factory(engine)
     uow = UnitOfWork(sessions)
 
+    staff_directory = (
+        HttpStaffDirectory(
+            base_url=cfg.auth_profile_base_url,
+            jwt_secret=cfg.jwt_secret,
+            jwt_algorithm=cfg.jwt_algorithm,
+            jwt_issuer=cfg.jwt_issuer,
+            jwt_audience=cfg.jwt_audience,
+            service_name=cfg.service_name,
+        )
+        if cfg.auth_profile_base_url
+        else None
+    )
+
     notification_service = NotificationService(
         uow=uow,
         notifications=PostgresNotificationRepository(),
         clock=SystemClock(),
         new_id=new_id,
+        staff=staff_directory,
     )
 
     # A producer with nothing to produce. It exists because the platform's Consumer needs one to

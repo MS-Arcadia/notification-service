@@ -57,6 +57,11 @@ class Kind(StrEnum):
     REGISTRATION_APPROVED = "REGISTRATION_APPROVED"
     REGISTRATION_REJECTED = "REGISTRATION_REJECTED"
     ROLE_GRANTED = "ROLE_GRANTED"
+    # Addressed to staff rather than to the person who acted, which is why they are named for
+    # what the reader has to do rather than for what happened: a Support agent opening these is
+    # looking for work waiting on them, not for news.
+    REVIEW_REQUESTED = "REVIEW_REQUESTED"
+    ROLE_REQUEST_RECEIVED = "ROLE_REQUEST_RECEIVED"
 
     # Not named in 1.10, and included because leaving them out would be indefensible: each is a
     # thing that happened to somebody's money or somebody's library without them asking.
