@@ -158,7 +158,15 @@ jobs:
             if curl -sf localhost:8086/livez >/dev/null; then break; fi
             sleep 1
           done
-          curl -sf localhost:8086/livez | grep -q UP
+          # Dump the container's own output before asserting. A container that dies on import
+          # never answers /livez, and `curl -sf | grep` under `set -e` then fails the step with
+          # nothing on screen but a container id — the traceback naming the missing module is
+          # right here and is the whole diagnosis.
+          curl -sf localhost:8086/livez | grep -q UP || {
+            echo "no UP from /livez after 30s; the container said:"
+            docker logs notification
+            exit 1
+          }
           echo "liveness is up"
           rc=$(curl -s -o /dev/null -w '%{http_code}' localhost:8086/readyz)
           [ "$rc" = "503" ] || { echo "expected 503 from /readyz, got $rc"; docker logs notification; exit 1; }
