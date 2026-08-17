@@ -165,7 +165,10 @@ def _game_approved(payload: dict) -> list[Draft]:
             title=f"{title} was approved",
             # The next step, not just the fact. Approval is not publication — the developer
             # answers the suggested price, then staff publish.
-            body="Support suggested a price. Accept it or propose a different one — staff will publish after you answer.",
+            body=(
+                "Support suggested a price. Accept it or propose a different one — "
+                "staff will publish after you answer."
+            ),
             subject_type=SubjectType.GAME,
             subject_id=game,
         )
