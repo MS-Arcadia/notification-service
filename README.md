@@ -42,7 +42,7 @@ on purpose — see below.
 
 | The event | Who is told | What they see |
 | --- | --- | --- |
-| `catalog.GameApproved` | the **developer** | "Neon Drift was approved" — set a price and publish |
+| `catalog.GameApproved` | the **developer** | "Neon Drift was approved" — accept or counter the suggested price |
 | `catalog.GameRejected` | the **developer** | the decision, with the reviewer's note as the body |
 | `catalog.GameReleased` | the **developer** | pre-orders were charged and now own it |
 | `catalog.PromotionProposed` | the **developer** | Support proposed a discount; it waits for approval |

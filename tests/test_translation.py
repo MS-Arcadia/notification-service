@@ -105,14 +105,14 @@ def test_a_game_decision_goes_to_the_developer_not_to_support():
 
 
 def test_an_approval_says_what_to_do_next():
-    """Approval is not publication — the developer still has to price and publish. A notification
+    """Approval is not publication — the developer answers the suggested price. A notification
     that omits that leaves them waiting for something that will not happen."""
     drafts = translation.translate(
         translation.CATALOG_GAME_APPROVED,
         {"game_id": "g", "developer_id": "dev-1", "title": "X"},
     )
     assert "price" in drafts[0].body.lower()
-    assert "publish" in drafts[0].body.lower()
+    assert "accept" in drafts[0].body.lower()
 
 
 def test_a_rejection_carries_the_reason_and_the_right_to_appeal():

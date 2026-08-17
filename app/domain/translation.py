@@ -163,10 +163,9 @@ def _game_approved(payload: dict) -> list[Draft]:
             user_id=developer,
             kind=Kind.GAME_APPROVED,
             title=f"{title} was approved",
-            # The next step, not just the fact. Approval is not publication — the developer still
-            # has to set a price and publish — and a notification that omits that leaves them
-            # waiting for something that will not happen.
-            body="You can now set its final price and publish it.",
+            # The next step, not just the fact. Approval is not publication — the developer
+            # answers the suggested price, then staff publish.
+            body="Support suggested a price. Accept it or propose a different one — staff will publish after you answer.",
             subject_type=SubjectType.GAME,
             subject_id=game,
         )
