@@ -203,9 +203,9 @@ def test_every_consumed_topic_has_a_handler_and_every_handler_a_topic():
     )
 
     available = {name for name in dir(Handlers) if name.endswith("_router")}
-    assert (
-        available == routers_used
-    ), f"routers that no consumer uses: {sorted(available - routers_used)}"
+    assert available == routers_used, (
+        f"routers that no consumer uses: {sorted(available - routers_used)}"
+    )
 
 
 def test_every_topic_this_service_reads_gets_a_dead_letter_topic():
@@ -297,12 +297,12 @@ def test_every_event_the_translator_knows_arrives_on_a_subscribed_topic():
 
     for event_type in known:
         producer = event_type.split(".")[1]
-        assert (
-            producer in topic_for_producer
-        ), f"{event_type} comes from {producer!r}, which is not mapped to any topic"
-        assert (
-            topic_for_producer[producer] in cfg.consumed_topics
-        ), f"{event_type} would never arrive: {topic_for_producer[producer]} is not subscribed"
+        assert producer in topic_for_producer, (
+            f"{event_type} comes from {producer!r}, which is not mapped to any topic"
+        )
+        assert topic_for_producer[producer] in cfg.consumed_topics, (
+            f"{event_type} would never arrive: {topic_for_producer[producer]} is not subscribed"
+        )
 
 
 # --- logging --------------------------------------------------------------
@@ -331,6 +331,6 @@ def test_no_log_call_uses_a_reserved_record_field():
                 for key in keyword.value.keys:
                     if isinstance(key, ast.Constant) and key.value in RESERVED_LOG_FIELDS:
                         offences.append(f"{path.name}:{key.lineno} extra={{{key.value!r}: ...}}")
-    assert (
-        not offences
-    ), f"these collide with logging.LogRecord's own fields and raise KeyError at INFO: {offences}"
+    assert not offences, (
+        f"these collide with logging.LogRecord's own fields and raise KeyError at INFO: {offences}"
+    )
