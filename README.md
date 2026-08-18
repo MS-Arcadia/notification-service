@@ -106,6 +106,79 @@ Three modules the other services vendor are deliberately **absent** here: `money
 and `idempotency.py`. This service holds no money, produces no events, and gets its idempotency from
 a database constraint rather than a table. Carrying them would suggest it does things it does not.
 
+## Use cases
+
+| # | Use case | Actor | Notes |
+|---|---|---|---|
+| 1 | List own notifications | Any account | Newest first, paginated |
+| 2 | Count unread | Any account | Drives the badge |
+| 3 | Mark one read | Owner | |
+| 4 | Mark all read | Owner | |
+| 5 | Translate an event into notifications | Kafka consumers | The service's real work |
+
+There is **no create endpoint and no delete**. A notification exists because something
+happened on the platform, and the only way to make one is to make that thing happen. An
+endpoint that manufactured them would let any caller write into somebody else's feed.
+
+Nobody can read anybody else's: the id comes from the token's subject, never from the path.
+
+### What gets translated
+
+| Event | Who is told | Why they are the audience |
+|---|---|---|
+| `PurchaseCompleted` | Buyer and developer | One bought it, one sold it |
+| `OwnershipGranted` (gift) | The recipient | The buyer already knows |
+| `GameSubmitted` | **Support** | The queue filled up and the only way to find out was to open the page |
+| `RoleRequested` | **Admins** | Same |
+| `GamePublished` | The developer | |
+| `ReviewPosted` | The developer | |
+| `TradeMatched` | Both sides | |
+| `FestivalStarted` | Every active user | A platform-wide announcement |
+| `InstalmentPlanStarted`, instalment events | The buyer | |
+| `GiftCardAbuseDetected` | Support | Flagged for review, never an automatic ban |
+
+The staff-directed rows are the ones worth noticing: most events are addressed to the person
+something happened *to*, but a submitted game and a requested role are addressed to whoever
+can act on them. This service owns "who gets told", so it asks Auth for the SUPPORT and ADMIN
+ids rather than having Catalog carry a notion of what a Support agent is.
+
+## How it talks to the rest of the platform
+
+```mermaid
+graph LR
+    gw["api-gateway"] -->|"REST /notifications/*"| n["notification-service"]
+    n -->|"REST: who is staff?<br/>self-signed SERVICE token"| auth["auth-profile-service"]
+
+    ge(("game-events")) --> n
+    pe(("purchase-events")) --> n
+    ue(("user-events")) --> n
+    te(("trade-events")) --> n
+    fe(("festival-events")) --> n
+    re(("review-events")) --> n
+
+    classDef s fill:#2d7dd2,stroke:#1a5a9e,color:#fff
+    classDef t fill:#f5a623,stroke:#c4841c,color:#000
+    class gw,n,auth s
+    class ge,pe,ue,te,fe,re t
+```
+
+| Direction | Peer | Why |
+|---|---|---|
+| Calls out (sync) | auth-profile-service | The SUPPORT and ADMIN ids, cached for a minute. An unreachable directory returns the cached set rather than raising — a consumer that stalls on an event nobody is waiting for costs more than a missed notification |
+| Consumes | six topics | Five consumer groups, so one slow topic cannot block another |
+| Publishes | *nothing* | A terminal consumer |
+
+## Infrastructure
+
+| Concern | Choice |
+|---|---|
+| Language | Python 3.13, FastAPI |
+| Storage | PostgreSQL — `arcadia_notification` |
+| Messaging | Kafka consumer only — no outbox, because nothing is published |
+| Idempotency | `(event_id, user_id)` — one event legitimately becomes several notifications |
+| Port | 8086 |
+| Deployment | 1 replica, HPA to 4 at 70% CPU |
+
 ## The decisions worth explaining
 
 ### `translate` is a pure function
