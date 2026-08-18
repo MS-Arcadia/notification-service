@@ -130,6 +130,7 @@ def build(config: Config | None = None) -> FastAPI:
                 (cfg.topic_user_events, handlers.user_events_router()),
                 (cfg.topic_trade_events, handlers.trade_events_router()),
                 (cfg.topic_festival_events, handlers.festival_events_router()),
+                (cfg.topic_review_events, handlers.review_events_router()),
             ):
                 consumer = kafka.Consumer(
                     cfg.kafka_brokers,

@@ -91,6 +91,13 @@ class Handlers:
         """Festival, likewise not built yet."""
         return Router().on(translation.FESTIVAL_STARTED, self.handle)
 
+    def review_events_router(self) -> Router:
+        return (
+            Router()
+            .on(translation.REVIEW_REPORTED, self.handle)
+            .on(translation.REVIEW_REPORT_RESOLVED, self.handle)
+        )
+
     # --- the one handler -------------------------------------------------
 
     async def handle(self, envelope: Envelope) -> None:

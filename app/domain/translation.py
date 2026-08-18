@@ -65,6 +65,9 @@ AUTH_USER_UNBANNED = "arcadia.auth.v1.UserUnbanned"
 MARKETPLACE_TRADE_MATCHED = "arcadia.marketplace.v1.TradeMatched"
 FESTIVAL_STARTED = "arcadia.festival.v1.FestivalStarted"
 
+REVIEW_REPORTED = "arcadia.review.v1.ReviewReported"
+REVIEW_REPORT_RESOLVED = "arcadia.review.v1.ReviewReportResolved"
+
 
 @dataclass(frozen=True, slots=True)
 class Draft:
@@ -597,6 +600,38 @@ def _festival_started(payload: dict) -> list[Draft]:
     ]
 
 
+def _review_reported(payload: dict, staff_ids: Sequence[str]) -> list[Draft]:
+    review_id = _require(payload, "review_id", REVIEW_REPORTED)
+    reason = str(payload.get("reason") or "").strip() or "No reason given."
+    return [
+        Draft(
+            user_id=staff_id,
+            kind=Kind.REVIEW_REPORT_RECEIVED,
+            title="A buyer review was reported",
+            body=f"Reason: {reason}",
+            subject_type=SubjectType.REVIEW,
+            subject_id=review_id,
+        )
+        for staff_id in staff_ids
+    ]
+
+
+def _review_report_resolved(payload: dict) -> list[Draft]:
+    reporter = _require(payload, "reporter_id", REVIEW_REPORT_RESOLVED)
+    deleted = payload.get("review_deleted", False)
+    body = "The review was removed." if deleted else "The review was kept after investigation."
+    return [
+        Draft(
+            user_id=reporter,
+            kind=Kind.REVIEW_REPORT_RESOLVED,
+            title="Your review report was handled",
+            body=body,
+            subject_type=SubjectType.REVIEW,
+            subject_id=str(payload.get("review_id") or ""),
+        )
+    ]
+
+
 # --- helpers -------------------------------------------------------------
 
 
@@ -664,6 +699,7 @@ def _role_label(role: str) -> str:
 _STAFF_TRANSLATORS = {
     CATALOG_GAME_SUBMITTED: _game_submitted,
     AUTH_ROLE_REQUESTED: _role_requested,
+    REVIEW_REPORTED: _review_reported,
 }
 
 _TRANSLATORS = {
@@ -690,6 +726,8 @@ _TRANSLATORS = {
     AUTH_USER_UNBANNED: _user_unbanned,
     MARKETPLACE_TRADE_MATCHED: _trade_matched,
     FESTIVAL_STARTED: _festival_started,
+    REVIEW_REPORTED: _review_reported,
+    REVIEW_REPORT_RESOLVED: _review_report_resolved,
 }
 
 # Every event this service acts on, for anything that needs the whole set rather than one lookup.

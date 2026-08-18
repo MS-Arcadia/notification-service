@@ -22,6 +22,7 @@ class Config(BaseConfig):
     # consumer group on one is silent, and this service starts notifying the day they ship.
     topic_trade_events: str = "trade-events"
     topic_festival_events: str = "festival-events"
+    topic_review_events: str = "review-events"
     consumer_group: str = "notification-service"
 
     # Where to ask who the staff are. A few events are addressed to whoever can act on them —
@@ -48,6 +49,7 @@ class Config(BaseConfig):
             self.topic_user_events,
             self.topic_trade_events,
             self.topic_festival_events,
+            self.topic_review_events,
         ]
 
     @property

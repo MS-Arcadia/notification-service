@@ -62,6 +62,7 @@ class Kind(StrEnum):
     # looking for work waiting on them, not for news.
     REVIEW_REQUESTED = "REVIEW_REQUESTED"
     ROLE_REQUEST_RECEIVED = "ROLE_REQUEST_RECEIVED"
+    REVIEW_REPORT_RECEIVED = "REVIEW_REPORT_RECEIVED"
 
     # Not named in 1.10, and included because leaving them out would be indefensible: each is a
     # thing that happened to somebody's money or somebody's library without them asking.
@@ -82,6 +83,7 @@ class Kind(StrEnum):
     INSTALMENT_PLAN_COMPLETED = "INSTALMENT_PLAN_COMPLETED"
     INSTALMENT_PLAN_DEFAULTED = "INSTALMENT_PLAN_DEFAULTED"
     PROMOTION_PROPOSED = "PROMOTION_PROPOSED"
+    REVIEW_REPORT_RESOLVED = "REVIEW_REPORT_RESOLVED"
 
 
 class SubjectType(StrEnum):
@@ -97,6 +99,7 @@ class SubjectType(StrEnum):
     ACCOUNT = "ACCOUNT"
     TRADE = "TRADE"
     FESTIVAL = "FESTIVAL"
+    REVIEW = "REVIEW"
 
 
 @dataclass(slots=True)
